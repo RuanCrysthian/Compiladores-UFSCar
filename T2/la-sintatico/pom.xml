@@ -54,7 +54,7 @@
         <configuration>
           <archive>
             <manifest>
-              <mainClass>br.ufscar.dc.compiladores.alguma.sintatico.Principal</mainClass>
+              <mainClass>br.ufscar.dc.compiladores.la.sintatico.Principal</mainClass>
             </manifest>
           </archive>
           <descriptorRefs>
