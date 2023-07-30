@@ -2,7 +2,7 @@
 
 Aluno: Ruan Crysthian Lima Ferraz - RA: 790866
 
-Analisador Léxico da linguagem LA que foi desenvolvida pelo prof. Dr. Jander.
+Analisador Semântico da linguagem LA que foi desenvolvida pelo prof. Dr. Jander.
 
 ## Dependências
 OpenJDK >= 17.0.7
