@@ -57,7 +57,7 @@
         <configuration>
           <archive>
             <manifest>
-              <mainClass>br.ufscar.dc.compiladores.la.semantico.Principal</mainClass>
+              <mainClass>br.ufscar.dc.compiladores.la.semantico.Main</mainClass>
             </manifest>
           </archive>
           <descriptorRefs>
