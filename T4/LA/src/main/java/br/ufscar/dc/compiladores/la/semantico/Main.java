@@ -21,22 +21,21 @@ public class Main {
             CharStream cs = CharStreams.fromFileName(args[0]);
 
             try (PrintWriter pw = new PrintWriter(arquivoSaida)) {
-                try{
+                try {
                     laLexer lex = new laLexer(cs);
                     Token t = null;
-                    boolean procede = true;
                     while ((t = lex.nextToken()).getType() != Token.EOF) {
                         String nomeToken = laLexer.VOCABULARY.getDisplayName(t.getType());
                         switch (nomeToken) {
                             case "ERRO":
-                                procede = false;
-                                throw new ParseCancellationException("Linha " + t.getLine() + ": " + t.getText() + " - simbolo nao identificado");
+                                throw new ParseCancellationException(
+                                        "Linha " + t.getLine() + ": " + t.getText() + " - simbolo nao identificado");
                             case "CADEIA_NAO_FECHADA":
-                                procede = false;
-                                throw new ParseCancellationException("Linha " + t.getLine() + ": cadeia literal nao fechada");
+                                throw new ParseCancellationException(
+                                        "Linha " + t.getLine() + ": cadeia literal nao fechada");
                             case "COMENTARIO_NAO_FECHADO":
-                                procede = false;
-                                throw new ParseCancellationException("Linha " + t.getLine() + ": comentario nao fechado");
+                                throw new ParseCancellationException(
+                                        "Linha " + t.getLine() + ": comentario nao fechado");
 
                         }
                     }
@@ -49,18 +48,18 @@ public class Main {
                     var programa = parser.programa();
                     laVisitor<Void> semantic = new LaVisitor();
                     semantic.visitPrograma(programa);
-                    if(!LaUtils.semanticErrors.isEmpty()){
-                        for(var s: LaUtils.semanticErrors){
+                    if (!LaUtils.semanticErrors.isEmpty()) {
+                        for (var s : LaUtils.semanticErrors) {
                             pw.write(s);
                         }
                         pw.write("Fim da compilacao\n");
                     }
-                }   catch (ParseCancellationException e){
+                } catch (ParseCancellationException e) {
                     pw.println(e.getMessage());
                     pw.println("Fim da compilacao");
                 }
-            }catch(FileNotFoundException fnfe) {
-                System.err.println("O arquivo/diretório não existe:"+args[1]);
+            } catch (FileNotFoundException fnfe) {
+                System.err.println("O arquivo/diretório não existe:" + args[1]);
             }
         } catch (IOException e) {
             e.printStackTrace();

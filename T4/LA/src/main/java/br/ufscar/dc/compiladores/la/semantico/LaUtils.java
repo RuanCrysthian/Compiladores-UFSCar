@@ -1,15 +1,24 @@
 package br.ufscar.dc.compiladores.la.semantico;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 import org.antlr.v4.runtime.Token;
+import org.antlr.v4.runtime.tree.ParseTree;
+
+import br.ufscar.dc.compiladores.la.semantico.laParser.ExpressaoContext;
 
 public class LaUtils {
     // Creating a list to store semantic errors
     public static List<String> semanticErrors = new ArrayList<>();
 
-    // Adding a semantic error to the list. It takes a Token and a message as parameters,
-    // retrieves the line number from the token, and adds the formatted error to the list.
+    // Adding a semantic error to the list. It takes a Token and a message as
+    // parameters,
+    // retrieves the line number from the token, and adds the formatted error to the
+    // list.
     public static void addSemanticError(Token t, String msg) {
         int line = t.getLine();
         semanticErrors.add(String.format("Linha %d: %s", line, msg));
@@ -19,13 +28,55 @@ public class LaUtils {
     public static SymbolTable.TypeLAVariable verifyType(SymbolTable symbolTable, laParser.IdentificadorContext ctx) {
         String identifier = ctx.getText();
 
-        if (!symbolTable.exists(identifier)) {
+        if (identifier.contains("[") || identifier.contains("]")) {
+            return verifyArrayIdentifier(symbolTable, ctx);
+        } else {
+            return verifyNonArrayIdentifier(symbolTable, ctx);
+        }
+    }
+
+    private static SymbolTable.TypeLAVariable verifyNonArrayIdentifier(SymbolTable symbolTable,
+            laParser.IdentificadorContext ctx) {
+        String identifier = ctx.getText();
+        String[] parts = identifier.split("\\.");
+
+        if (!symbolTable.exists(parts[0])) {
             addSemanticError(ctx.IDENT(0).getSymbol(), "identificador " + identifier + " nao declarado\n");
             return SymbolTable.TypeLAVariable.NAO_DECLARADO;
-        } else {
-            SymbolTableEntry ident = symbolTable.check(identifier);
-            return ident.variableType;
         }
+
+        SymbolTableEntry entry = symbolTable.check(parts[0]);
+        if (parts.length > 1 && entry.identifierType == SymbolTable.TypeLAIdentifier.REGISTRO) {
+            SymbolTable fields = entry.argsRegFunc;
+            String fieldName = parts[1];
+
+            if (!fields.exists(fieldName)) {
+                addSemanticError(ctx.IDENT(0).getSymbol(), "identificador " + identifier + " nao declarado\n");
+                return SymbolTable.TypeLAVariable.NAO_DECLARADO;
+            }
+
+            SymbolTableEntry fieldEntry = fields.check(fieldName);
+            return fieldEntry.variableType;
+        }
+
+        return entry.variableType;
+    }
+
+    private static SymbolTable.TypeLAVariable verifyArrayIdentifier(SymbolTable symbolTable,
+            laParser.IdentificadorContext ctx) {
+        String identifierNoDim = ctx.IDENT().stream().map(ParseTree::getText).collect(Collectors.joining());
+
+        for (laParser.Exp_aritmeticaContext xp : ctx.dimensao().exp_aritmetica()) {
+            verifyType(symbolTable, xp);
+        }
+
+        if (!symbolTable.exists(identifierNoDim)) {
+            addSemanticError(ctx.IDENT(0).getSymbol(), "identificador " + identifierNoDim + " nao declarado\n");
+            return SymbolTable.TypeLAVariable.NAO_DECLARADO;
+        }
+
+        SymbolTableEntry entry = symbolTable.check(identifierNoDim);
+        return entry.variableType;
     }
 
     // Verifying the type in context of an expression
@@ -146,41 +197,67 @@ public class LaUtils {
     public static SymbolTable.TypeLAVariable verifyType(SymbolTable symbolTable, laParser.Parcela_unarioContext ctx) {
         if (ctx.NUM_INT() != null) {
             return SymbolTable.TypeLAVariable.INTEIRO;
-        } else if (ctx.NUM_REAL() != null) {
-            return SymbolTable.TypeLAVariable.REAL;
-        } else if (ctx.IDENT() != null) {
-            // function
-            String identifier = ctx.IDENT().getText();
-            if (!symbolTable.exists(identifier)) {
-                addSemanticError(ctx.IDENT().getSymbol(), "identificador " + identifier + " nao declarado\n");
-                return SymbolTable.TypeLAVariable.NAO_DECLARADO;
-            }
-
-            for (var exp : ctx.expressao()) {
-                var aux = verifyType(symbolTable, exp);
-                if (!verifyType(SymbolTable.TypeLAVariable.LOGICO, aux)) {
-                    return SymbolTable.TypeLAVariable.INVALIDO;
-                }
-            }
-            return symbolTable.check(identifier).variableType;
         }
-
+        if (ctx.NUM_REAL() != null) {
+            return SymbolTable.TypeLAVariable.REAL;
+        }
+        if (ctx.IDENT() != null) {
+            return verifyFunctionCall(symbolTable, ctx);
+        }
         if (ctx.identificador() != null) {
             return verifyType(symbolTable, ctx.identificador());
         }
-
-        if (ctx.IDENT() == null && ctx.expressao() != null) {
-            for (var exp : ctx.expressao()) {
+        if (ctx.expressao() != null) {
+            for (ExpressaoContext exp : ctx.expressao()) {
                 return verifyType(symbolTable, exp);
             }
         }
 
-        return null;
+        return null; // You might want to handle this case accordingly
+    }
+
+    private static SymbolTable.TypeLAVariable verifyFunctionCall(SymbolTable symbolTable,
+            laParser.Parcela_unarioContext ctx) {
+        String functionName = ctx.IDENT().getText();
+
+        if (!symbolTable.exists(functionName)) {
+            addSemanticError(ctx.IDENT().getSymbol(), "identificador " + functionName + " nao declarado\n");
+            return SymbolTable.TypeLAVariable.NAO_DECLARADO;
+        }
+
+        SymbolTableEntry function = symbolTable.check(functionName);
+        ArrayList<SymbolTable.TypeLAVariable> parameterTypes = new ArrayList<>();
+
+        for (ExpressaoContext exp : ctx.expressao()) {
+            parameterTypes.add(verifyType(symbolTable, exp));
+        }
+
+        if (!function.argsRegFunc.validType(parameterTypes)) {
+            addSemanticError(ctx.IDENT().getSymbol(),
+                    "incompatibilidade de parametros na chamada de " + functionName + "\n");
+        }
+
+        return mapReturnType(function.functionType);
+    }
+
+    private static SymbolTable.TypeLAVariable mapReturnType(String returnType) {
+        Map<String, SymbolTable.TypeLAVariable> returnTypeMappings = new HashMap<>();
+        returnTypeMappings.put("inteiro", SymbolTable.TypeLAVariable.INTEIRO);
+        returnTypeMappings.put("literal", SymbolTable.TypeLAVariable.LITERAL);
+        returnTypeMappings.put("real", SymbolTable.TypeLAVariable.REAL);
+        returnTypeMappings.put("logico", SymbolTable.TypeLAVariable.LOGICO);
+        returnTypeMappings.put("^logico", SymbolTable.TypeLAVariable.PONT_LOGI);
+        returnTypeMappings.put("^real", SymbolTable.TypeLAVariable.PONT_REAL);
+        returnTypeMappings.put("^literal", SymbolTable.TypeLAVariable.PONT_LITE);
+        returnTypeMappings.put("^inteiro", SymbolTable.TypeLAVariable.PONT_INTE);
+
+        return returnTypeMappings.getOrDefault(returnType, SymbolTable.TypeLAVariable.REGISTRO);
     }
 
     // Verifying if the assignment types are valid
     public static boolean verifyType(SymbolTable.TypeLAVariable tipo1, SymbolTable.TypeLAVariable tipo2) {
-        if (tipo1 == tipo2 || tipo1 == SymbolTable.TypeLAVariable.NAO_DECLARADO || tipo2 == SymbolTable.TypeLAVariable.NAO_DECLARADO) {
+        if (tipo1 == tipo2 || tipo1 == SymbolTable.TypeLAVariable.NAO_DECLARADO
+                || tipo2 == SymbolTable.TypeLAVariable.NAO_DECLARADO) {
             return true;
         }
 
@@ -193,6 +270,12 @@ public class LaUtils {
             return true;
         }
 
+        if ((tipo1 == SymbolTable.TypeLAVariable.PONT_INTE || tipo1 == SymbolTable.TypeLAVariable.PONT_REAL
+                || tipo1 == SymbolTable.TypeLAVariable.PONT_LOGI) &&
+                tipo2 == SymbolTable.TypeLAVariable.ENDERECO) {
+            return true;
+        }
+
         return false;
     }
 
@@ -200,7 +283,19 @@ public class LaUtils {
     public static SymbolTable.TypeLAVariable verifyType(SymbolTable table, laParser.Parcela_nao_unarioContext ctx) {
         if (ctx.CADEIA() != null) {
             return SymbolTable.TypeLAVariable.LITERAL;
+        } else {
+            return verifyAddressOrIdentifier(table, ctx);
         }
-        return null;
+    }
+
+    private static SymbolTable.TypeLAVariable verifyAddressOrIdentifier(SymbolTable table,
+            laParser.Parcela_nao_unarioContext ctx) {
+        SymbolTable.TypeLAVariable ret = verifyType(table, ctx.identificador());
+
+        if (ctx.getText().contains("&")) {
+            return SymbolTable.TypeLAVariable.ENDERECO;
+        }
+
+        return ret;
     }
 }
