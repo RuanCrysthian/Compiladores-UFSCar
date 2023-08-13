@@ -1,0 +1,14 @@
+/home/ruan/Ufscar/Compiladores-UFSCar/T5/LA/src/main/java/br/ufscar/dc/compiladores/la/semantico/SyntaxErrorListener.java
+/home/ruan/Ufscar/Compiladores-UFSCar/T5/LA/target/generated-sources/antlr4/br/ufscar/dc/compiladores/la/semantico/laListener.java
+/home/ruan/Ufscar/Compiladores-UFSCar/T5/LA/src/main/java/br/ufscar/dc/compiladores/la/semantico/SymbolTable.java
+/home/ruan/Ufscar/Compiladores-UFSCar/T5/LA/target/generated-sources/antlr4/br/ufscar/dc/compiladores/la/semantico/laParser.java
+/home/ruan/Ufscar/Compiladores-UFSCar/T5/LA/target/generated-sources/antlr4/br/ufscar/dc/compiladores/la/semantico/laBaseVisitor.java
+/home/ruan/Ufscar/Compiladores-UFSCar/T5/LA/src/main/java/br/ufscar/dc/compiladores/la/semantico/LaSemanticAnalyzer.java
+/home/ruan/Ufscar/Compiladores-UFSCar/T5/LA/src/main/java/br/ufscar/dc/compiladores/la/semantico/LaUtils.java
+/home/ruan/Ufscar/Compiladores-UFSCar/T5/LA/target/generated-sources/antlr4/br/ufscar/dc/compiladores/la/semantico/laBaseListener.java
+/home/ruan/Ufscar/Compiladores-UFSCar/T5/LA/src/main/java/br/ufscar/dc/compiladores/la/semantico/Main.java
+/home/ruan/Ufscar/Compiladores-UFSCar/T5/LA/src/main/java/br/ufscar/dc/compiladores/la/semantico/SymbolTableEntry.java
+/home/ruan/Ufscar/Compiladores-UFSCar/T5/LA/target/generated-sources/antlr4/br/ufscar/dc/compiladores/la/semantico/laVisitor.java
+/home/ruan/Ufscar/Compiladores-UFSCar/T5/LA/src/main/java/br/ufscar/dc/compiladores/la/semantico/Scope.java
+/home/ruan/Ufscar/Compiladores-UFSCar/T5/LA/src/main/java/br/ufscar/dc/compiladores/la/semantico/LaC.java
+/home/ruan/Ufscar/Compiladores-UFSCar/T5/LA/target/generated-sources/antlr4/br/ufscar/dc/compiladores/la/semantico/laLexer.java
